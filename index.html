@@ -1,262 +1,245 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor de Produtividade</title>
+    <title>Plataforma de Trabalho</title>
     <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-            padding: 10px;
-            background-color: rgb(207, 233, 224);
+        .tarefa {
+            margin-bottom: 10px;
         }
 
-        .coluna {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
+        .mensagem {
+            margin-bottom: 10px;
         }
 
-        .botao-pausar {
-            background-color: rgb(221, 150, 150);
+        .remetente {
+            font-weight: bold;
+            margin-right: 5px;
         }
 
-        .botao-retomar {
-            background-color: green;
-        }
-
-        .gestor-produtividade {
-            display: none;
+        .texto {
+            color: #555555;
         }
     </style>
+</head>
+<body>
+    <h1>Plataforma de Trabalho</h1>
+    <h2>Bem-vindo, <span id="nome-usuario"></span>!</h2>
+    <hr>
+
+    <h3>Contador de Tempo de Trabalho</h3>
+    <p>Tempo de trabalho: <span id="tempo-trabalho">00:00:00</span></p>
+    <button onclick="iniciarContagem()">Iniciar</button>
+    <button onclick="pausarContagem()">Pausar</button>
+    <button onclick="retomarContagem()">Retomar</button>
+    <hr>
+
+    <h3>Adicionar Tarefas</h3>
+    <input type="text" id="descricao-tarefa" placeholder="Descrição da tarefa">
+    <button onclick="adicionarTarefa()">Adicionar</button>
+    <div id="lista-tarefas"></div>
+    <hr>
+
+    <h3>Chat</h3>
+    <div id="chat"></div>
+    <input type="text" id="mensagem-input" placeholder="Digite uma mensagem">
+    <button onclick="enviarMensagem()">Enviar</button>
+
     <script>
-        var usuarioAtual;
-        var inicioTrabalho;
-        var inicioPausa;
-        var intervaloAtualizacao;
+        var usuarios = [
+            { usuario: "admin", senha: "1234" },
+            { usuario: "david", senha: "1234" },
+            { usuario: "joao", senha: "1234" }
+        ];
+
+        var usuarioAtual = "";
+        var inicioTrabalho = null;
+        var inicioPausa = null;
         var tempoPausa = 0;
+        var intervaloContagem = null;
         var tarefasRealizadas = [];
-        var pontuacao = 0;
+        var mensagensEnviadas = [];
 
-        function fazerLogin() {
-            var usuario = document.getElementById("usuario").value;
-            var senha = document.getElementById("senha").value;
+        function login() {
+            var usuarioInput = document.getElementById("usuario");
+            var senhaInput = document.getElementById("senha");
 
-            // Verifica as credenciais do usuário
-            if (verificarCredenciais(usuario, senha)) {
+            var usuario = usuarioInput.value;
+            var senha = senhaInput.value;
+
+            var credenciaisValidas = usuarios.some(function (credenciais) {
+                return credenciais.usuario === usuario && credenciais.senha === senha;
+            });
+
+            if (credenciaisValidas) {
                 usuarioAtual = usuario;
-                exibirGestorProdutividade();
+                atualizarNomeUsuario();
+                carregarDadosUsuario();
+                exibirTarefas();
+                exibirMensagens();
             } else {
                 alert("Credenciais inválidas. Tente novamente.");
             }
+
+            usuarioInput.value = "";
+            senhaInput.value = "";
         }
 
-        function verificarCredenciais(usuario, senha) {
-            // Define as credenciais válidas
-            var credenciais = {
-                "admin23": "1234",
-                "davidclaro": "1234",
-                "joaoteixeira": "1234"
-            };
-
-            // Verifica se as credenciais fornecidas correspondem às credenciais válidas
-            return credenciais[usuario] === senha;
-        }
-
-        function exibirGestorProdutividade() {
-            document.getElementById("login").style.display = "none";
-            document.getElementsByClassName("gestor-produtividade")[0].style.display = "block";
-
-            // Carrega os dados do usuário atual
-            carregarDadosUsuario();
-        }
-
-        function iniciarDiaTrabalho() {
-            inicioTrabalho = new Date();
-            intervaloAtualizacao = setInterval(atualizarTempoTrabalho, 1000); // Atualiza o tempo a cada segundo
-
-            // Salva os dados do usuário atual
-            salvarDadosUsuario();
-        }
-
-        function finalizarDiaTrabalho() {
-            clearInterval(intervaloAtualizacao);
-            if (inicioTrabalho) {
-                var fimTrabalho = new Date();
-                var tempoTrabalho = fimTrabalho - inicioTrabalho;
-                var tempoPausaFormatado = obterTempoFormatado(tempoPausa * 1000);
-                var tempoTrabalhoFormatado = obterTempoFormatado(tempoTrabalho);
-                var tempoTrabalhoMenosPausaFormatado = obterTempoFormatado(tempoTrabalho - tempoPausa * 1000);
-
-                // Atualiza a interface com os dados
-                document.getElementById("tempo-trabalho").textContent = tempoTrabalhoFormatado;
-                document.getElementById("tempo-pausa").textContent = tempoPausaFormatado;
-                document.getElementById("tempo-trabalho-menos-pausa").textContent = tempoTrabalhoMenosPausaFormatado;
-
-                // Exibe a pontuação
-                var pontuacaoAtual = calcularPontuacao(tempoTrabalho);
-                pontuacao += pontuacaoAtual;
-                document.getElementById("pontuacao").textContent = pontuacao;
-
-                // Exibe o botão para reiniciar o dia de trabalho
-                document.getElementById("botao-reiniciar").style.display = "block";
-
-                // Adiciona a tarefa realizada à lista
-                var tarefa = {
-                    "inicio": inicioTrabalho,
-                    "fim": fimTrabalho,
-                    "tempoTrabalho": tempoTrabalho,
-                    "tempoPausa": tempoPausa,
-                    "pontuacao": pontuacaoAtual
-                };
-                tarefasRealizadas.push(tarefa);
-
-                // Salva os dados do usuário atual
-                salvarDadosUsuario();
-            }
-        }
-
-        function reiniciarDiaTrabalho() {
-            inicioTrabalho = null;
-            tempoPausa = 0;
-            tarefasRealizadas = [];
-            pontuacao = 0;
-
-            // Reseta a interface
-            document.getElementById("tempo-trabalho").textContent = "00:00:00";
-            document.getElementById("tempo-pausa").textContent = "00:00:00";
-            document.getElementById("tempo-trabalho-menos-pausa").textContent = "00:00:00";
-            document.getElementById("pontuacao").textContent = "0";
-            document.getElementById("botao-reiniciar").style.display = "none";
-
-            // Salva os dados do usuário atual
-            salvarDadosUsuario();
-        }
-
-        function iniciarPausa() {
-            inicioPausa = new Date();
-            document.getElementById("botao-pausar").style.display = "none";
-            document.getElementById("botao-retomar").style.display = "block";
-        }
-
-        function retomarTrabalho() {
-            if (inicioPausa) {
-                var fimPausa = new Date();
-                var tempoPausaAtual = (fimPausa - inicioPausa) / 1000;
-                tempoPausa += tempoPausaAtual;
-
-                // Atualiza a interface com o tempo de pausa atualizado
-                document.getElementById("tempo-pausa").textContent = obterTempoFormatado(tempoPausa * 1000);
-
-                inicioPausa = null;
-                document.getElementById("botao-pausar").style.display = "block";
-                document.getElementById("botao-retomar").style.display = "none";
-
-                // Salva os dados do usuário atual
-                salvarDadosUsuario();
-            }
-        }
-
-        function atualizarTempoTrabalho() {
-            var tempoTrabalhoAtual = new Date() - inicioTrabalho;
-            var tempoTrabalhoFormatado = obterTempoFormatado(tempoTrabalhoAtual);
-
-            // Atualiza a interface com o tempo de trabalho atualizado
-            document.getElementById("tempo-trabalho").textContent = tempoTrabalhoFormatado;
-        }
-
-        function calcularPontuacao(tempoTrabalho) {
-            // Calcula a pontuação com base no tempo de trabalho
-            var minutosTrabalho = Math.floor(tempoTrabalho / (1000 * 60));
-            return minutosTrabalho;
-        }
-
-        function obterTempoFormatado(tempo) {
-            var segundos = Math.floor((tempo / 1000) % 60);
-            var minutos = Math.floor((tempo / (1000 * 60)) % 60);
-            var horas = Math.floor((tempo / (1000 * 60 * 60)) % 24);
-
-            var segundosFormatado = segundos < 10 ? "0" + segundos : segundos;
-            var minutosFormatado = minutos < 10 ? "0" + minutos : minutos;
-            var horasFormatado = horas < 10 ? "0" + horas : horas;
-
-            return horasFormatado + ":" + minutosFormatado + ":" + segundosFormatado;
+        function atualizarNomeUsuario() {
+            var nomeUsuarioElement = document.getElementById("nome-usuario");
+            nomeUsuarioElement.textContent = usuarioAtual;
         }
 
         function carregarDadosUsuario() {
-            var dadosUsuario = JSON.parse(localStorage.getItem(usuarioAtual));
-
+            var dadosUsuario = localStorage.getItem(usuarioAtual);
             if (dadosUsuario) {
-                inicioTrabalho = dadosUsuario.inicioTrabalho ? new Date(dadosUsuario.inicioTrabalho) : null;
-                tempoPausa = dadosUsuario.tempoPausa ? dadosUsuario.tempoPausa : 0;
-                tarefasRealizadas = dadosUsuario.tarefasRealizadas ? dadosUsuario.tarefasRealizadas : [];
-                pontuacao = dadosUsuario.pontuacao ? dadosUsuario.pontuacao : 0;
+                dadosUsuario = JSON.parse(dadosUsuario);
+                tarefasRealizadas = dadosUsuario.tarefas || [];
+                mensagensEnviadas = dadosUsuario.mensagens || [];
             }
-
-            // Atualiza a interface com os dados carregados
-            if (inicioTrabalho) {
-                document.getElementById("botao-reiniciar").style.display = "block";
-                document.getElementById("botao-pausar").style.display = "block";
-                document.getElementById("botao-retomar").style.display = "none";
-                intervaloAtualizacao = setInterval(atualizarTempoTrabalho, 1000);
-            } else {
-                document.getElementById("botao-reiniciar").style.display = "none";
-                document.getElementById("botao-pausar").style.display = "none";
-                document.getElementById("botao-retomar").style.display = "none";
-            }
-
-            document.getElementById("tempo-trabalho").textContent = dadosUsuario && dadosUsuario.tempoTrabalhoFormatado ? dadosUsuario.tempoTrabalhoFormatado : "00:00:00";
-            document.getElementById("tempo-pausa").textContent = dadosUsuario && dadosUsuario.tempoPausaFormatado ? dadosUsuario.tempoPausaFormatado : "00:00:00";
-            document.getElementById("tempo-trabalho-menos-pausa").textContent = dadosUsuario && dadosUsuario.tempoTrabalhoMenosPausaFormatado ? dadosUsuario.tempoTrabalhoMenosPausaFormatado : "00:00:00";
-            document.getElementById("pontuacao").textContent = dadosUsuario && dadosUsuario.pontuacao ? dadosUsuario.pontuacao : "0";
         }
 
         function salvarDadosUsuario() {
             var dadosUsuario = {
-                "inicioTrabalho": inicioTrabalho ? inicioTrabalho.toISOString() : null,
-                "tempoPausa": tempoPausa,
-                "tarefasRealizadas": tarefasRealizadas,
-                "pontuacao": pontuacao,
-                "tempoTrabalhoFormatado": document.getElementById("tempo-trabalho").textContent,
-                "tempoPausaFormatado": document.getElementById("tempo-pausa").textContent,
-                "tempoTrabalhoMenosPausaFormatado": document.getElementById("tempo-trabalho-menos-pausa").textContent
+                tarefas: tarefasRealizadas,
+                mensagens: mensagensEnviadas
             };
-
             localStorage.setItem(usuarioAtual, JSON.stringify(dadosUsuario));
         }
-    </script>
-</head>
-<body>
-    <div id="login" class="coluna">
-        <h1>Gestor de Produtividade</h1>
-        <input type="text" id="usuario" placeholder="Usuário">
-        <input type="password" id="senha" placeholder="Senha">
-        <button onclick="fazerLogin()">Entrar</button>
-    </div>
 
-    <div class="gestor-produtividade">
-        <h2>Bem-vindo, <span id="nome-usuario"></span>!</h2>
-        <div class="coluna">
-            <h3>Dia de trabalho:</h3>
-            <p>Tempo de trabalho: <span id="tempo-trabalho">00:00:00</span></p>
-            <p>Tempo de pausa: <span id="tempo-pausa">00:00:00</span></p>
-            <p>Tempo de trabalho (menos pausa): <span id="tempo-trabalho-menos-pausa">00:00:00</span></p>
-            <p>Pontuação: <span id="pontuacao">0</span></p>
-        </div>
-        <div class="coluna">
-            <button onclick="iniciarDiaTrabalho()">Iniciar Dia de Trabalho</button>
-            <button onclick="finalizarDiaTrabalho()">Finalizar Dia de Trabalho</button>
-            <button id="botao-reiniciar" onclick="reiniciarDiaTrabalho()" style="display: none;">Reiniciar Dia de Trabalho</button>
-        </div>
-        <div class="coluna">
-            <button id="botao-pausar" onclick="iniciarPausa()" style="display: none;">Pausar</button>
-            <button id="botao-retomar" onclick="retomarTrabalho()" style="display: none;">Retomar</button>
-        </div>
-    </div>
+        function iniciarContagem() {
+            inicioTrabalho = new Date().getTime();
+            intervaloContagem = setInterval(atualizarTempoTrabalho, 1000);
+        }
+
+        function pausarContagem() {
+            inicioPausa = new Date().getTime();
+            clearInterval(intervaloContagem);
+        }
+
+        function retomarContagem() {
+            if (inicioPausa) {
+                tempoPausa += new Date().getTime() - inicioPausa;
+                inicioPausa = null;
+                intervaloContagem = setInterval(atualizarTempoTrabalho, 1000);
+            }
+        }
+
+        function atualizarTempoTrabalho() {
+            var tempoAtual = new Date().getTime();
+            var tempoTotal = tempoAtual - inicioTrabalho - tempoPausa;
+            var segundos = Math.floor((tempoTotal / 1000) % 60);
+            var minutos = Math.floor((tempoTotal / (1000 * 60)) % 60);
+            var horas = Math.floor(tempoTotal / (1000 * 60 * 60));
+            var tempoFormatado = formatarNumero(horas) + ":" + formatarNumero(minutos) + ":" + formatarNumero(segundos);
+            var tempoTrabalhoElement = document.getElementById("tempo-trabalho");
+            tempoTrabalhoElement.textContent = tempoFormatado;
+        }
+
+        function formatarNumero(numero) {
+            return numero < 10 ? "0" + numero : numero;
+        }
+
+        function adicionarTarefa() {
+            var descricaoTarefaInput = document.getElementById("descricao-tarefa");
+            var descricaoTarefa = descricaoTarefaInput.value;
+            if (descricaoTarefa) {
+                var novaTarefa = {
+                    descricao: descricaoTarefa,
+                    concluida: false
+                };
+                tarefasRealizadas.push(novaTarefa);
+                exibirTarefas();
+                descricaoTarefaInput.value = "";
+                salvarDadosUsuario();
+            }
+        }
+
+        function exibirTarefas() {
+            var listaTarefasElement = document.getElementById("lista-tarefas");
+            listaTarefasElement.innerHTML = "";
+
+            tarefasRealizadas.forEach(function (tarefa, index) {
+                var tarefaElement = document.createElement("div");
+                tarefaElement.classList.add("tarefa");
+
+                var descricaoElement = document.createElement("span");
+                descricaoElement.classList.add("descricao");
+                descricaoElement.textContent = tarefa.descricao;
+
+                var concluirButton = document.createElement("button");
+                concluirButton.textContent = "Concluir";
+                concluirButton.onclick = function () {
+                    concluirTarefa(index);
+                };
+
+                var cancelarButton = document.createElement("button");
+                cancelarButton.textContent = "Cancelar";
+                cancelarButton.onclick = function () {
+                    cancelarTarefa(index);
+                };
+
+                tarefaElement.appendChild(descricaoElement);
+                tarefaElement.appendChild(concluirButton);
+                tarefaElement.appendChild(cancelarButton);
+
+                listaTarefasElement.appendChild(tarefaElement);
+            });
+        }
+
+        function concluirTarefa(index) {
+            tarefasRealizadas[index].concluida = true;
+            exibirTarefas();
+            salvarDadosUsuario();
+        }
+
+        function cancelarTarefa(index) {
+            tarefasRealizadas.splice(index, 1);
+            exibirTarefas();
+            salvarDadosUsuario();
+        }
+
+        function enviarMensagem() {
+            var mensagemInput = document.getElementById("mensagem-input");
+            var mensagem = mensagemInput.value.trim();
+            if (mensagem) {
+                var novaMensagem = {
+                    remetente: usuarioAtual,
+                    texto: mensagem
+                };
+                mensagensEnviadas.push(novaMensagem);
+                exibirMensagens();
+                mensagemInput.value = "";
+                salvarDadosUsuario();
+            }
+        }
+
+        function exibirMensagens() {
+            var chatElement = document.getElementById("chat");
+            chatElement.innerHTML = "";
+
+            mensagensEnviadas.forEach(function (mensagem) {
+                var mensagemElement = document.createElement("div");
+                mensagemElement.classList.add("mensagem");
+
+                var remetenteElement = document.createElement("span");
+                remetenteElement.classList.add("remetente");
+                remetenteElement.textContent = mensagem.remetente + ":";
+
+                var textoElement = document.createElement("span");
+                textoElement.classList.add("texto");
+                textoElement.textContent = mensagem.texto;
+
+                mensagemElement.appendChild(remetenteElement);
+                mensagemElement.appendChild(textoElement);
+
+                chatElement.appendChild(mensagemElement);
+            });
+        }
+    </script>
+
+    <h3>Login</h3>
+    <input type="text" id="usuario" placeholder="Usuário">
+    <input type="password" id="senha" placeholder="Senha">
+    <button onclick="login()">Entrar</button>
 </body>
 </html>
