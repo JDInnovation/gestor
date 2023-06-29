@@ -3,243 +3,195 @@
 <head>
     <title>Plataforma de Trabalho</title>
     <style>
+        .hidden {
+            display: none;
+        }
         .tarefa {
             margin-bottom: 10px;
-        }
-
-        .mensagem {
-            margin-bottom: 10px;
-        }
-
-        .remetente {
-            font-weight: bold;
-            margin-right: 5px;
-        }
-
-        .texto {
-            color: #555555;
         }
     </style>
 </head>
 <body>
-    <h1>Plataforma de Trabalho</h1>
-    <h2>Bem-vindo, <span id="nome-usuario"></span>!</h2>
-    <hr>
+    <section id="login-section">
+        <h1>Login</h1>
+        <label for="username">Utilizador:</label>
+        <input type="text" id="username" placeholder="Utilizador">
+        <br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" placeholder="Password">
+        <br>
+        <button onclick="login()">Entrar</button>
+    </section>
 
-    <h3>Contador de Tempo de Trabalho</h3>
-    <p>Tempo de trabalho: <span id="tempo-trabalho">00:00:00</span></p>
-    <button onclick="iniciarContagem()">Iniciar</button>
-    <button onclick="pausarContagem()">Pausar</button>
-    <button onclick="retomarContagem()">Retomar</button>
-    <hr>
+    <section id="trabalho-section" class="hidden">
+        <h1>Bem-vindo, <span id="nome-usuario"></span>!</h1>
 
-    <h3>Adicionar Tarefas</h3>
-    <input type="text" id="descricao-tarefa" placeholder="Descrição da tarefa">
-    <button onclick="adicionarTarefa()">Adicionar</button>
-    <div id="lista-tarefas"></div>
-    <hr>
+        <div>
+            <button onclick="fecharDiaTrabalho()">Fechar Dia de Trabalho</button>
+        </div>
 
-    <h3>Chat</h3>
-    <div id="chat"></div>
-    <input type="text" id="mensagem-input" placeholder="Digite uma mensagem">
-    <button onclick="enviarMensagem()">Enviar</button>
+        <div>
+            <h2>Contador de Tempo de Trabalho</h2>
+            <p id="tempo-trabalho">Tempo de trabalho: 0h 0m 0s</p>
+            <button onclick="pausarContadorTempo()">Pausar</button>
+            <button onclick="retomarContadorTempo()">Retomar</button>
+        </div>
+
+        <div>
+            <h2>Adicionar Tarefa</h2>
+            <input type="text" id="descricao-tarefa" placeholder="Descrição da Tarefa">
+            <button onclick="adicionarTarefa()">Adicionar Tarefa</button>
+        </div>
+
+        <div>
+            <h2>Tarefas</h2>
+            <div id="lista-tarefas"></div>
+        </div>
+
+        <div>
+            <h2>Chat</h2>
+            <div id="mensagens"></div>
+            <input type="text" id="mensagem-input" placeholder="Escreva uma mensagem">
+            <button onclick="enviarMensagem()">Enviar</button>
+        </div>
+    </section>
 
     <script>
-        var usuarios = [
-            { usuario: "admin", senha: "1234" },
-            { usuario: "david", senha: "1234" },
-            { usuario: "joao", senha: "1234" }
-        ];
-
-        var usuarioAtual = "";
-        var inicioTrabalho = null;
-        var inicioPausa = null;
-        var tempoPausa = 0;
-        var intervaloContagem = null;
-        var tarefasRealizadas = [];
-        var mensagensEnviadas = [];
-
         function login() {
-            var usuarioInput = document.getElementById("usuario");
-            var senhaInput = document.getElementById("senha");
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
 
-            var usuario = usuarioInput.value;
-            var senha = senhaInput.value;
-
-            var credenciaisValidas = usuarios.some(function (credenciais) {
-                return credenciais.usuario === usuario && credenciais.senha === senha;
-            });
-
-            if (credenciaisValidas) {
-                usuarioAtual = usuario;
-                atualizarNomeUsuario();
-                carregarDadosUsuario();
-                exibirTarefas();
-                exibirMensagens();
+            if (username === 'admin' && password === '1234') {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('trabalho-section').classList.remove('hidden');
+                document.getElementById('nome-usuario').textContent = 'Admin';
+                iniciarContadorTempo();
+            } else if (username === 'david' && password === '1234') {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('trabalho-section').classList.remove('hidden');
+                document.getElementById('nome-usuario').textContent = 'David';
+                iniciarContadorTempo();
+            } else if (username === 'joao' && password === '1234') {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('trabalho-section').classList.remove('hidden');
+                document.getElementById('nome-usuario').textContent = 'João';
+                iniciarContadorTempo();
             } else {
-                alert("Credenciais inválidas. Tente novamente.");
-            }
-
-            usuarioInput.value = "";
-            senhaInput.value = "";
-        }
-
-        function atualizarNomeUsuario() {
-            var nomeUsuarioElement = document.getElementById("nome-usuario");
-            nomeUsuarioElement.textContent = usuarioAtual;
-        }
-
-        function carregarDadosUsuario() {
-            var dadosUsuario = localStorage.getItem(usuarioAtual);
-            if (dadosUsuario) {
-                dadosUsuario = JSON.parse(dadosUsuario);
-                tarefasRealizadas = dadosUsuario.tarefas || [];
-                mensagensEnviadas = dadosUsuario.mensagens || [];
+                alert('Credenciais inválidas. Tente novamente.');
             }
         }
 
-        function salvarDadosUsuario() {
-            var dadosUsuario = {
-                tarefas: tarefasRealizadas,
-                mensagens: mensagensEnviadas
-            };
-            localStorage.setItem(usuarioAtual, JSON.stringify(dadosUsuario));
+        function formatarTempo(tempo) {
+            const horas = Math.floor(tempo / 3600);
+            const minutos = Math.floor((tempo % 3600) / 60);
+            const segundos = tempo % 60;
+            return horas + 'h ' + minutos + 'm ' + segundos + 's';
         }
 
-        function iniciarContagem() {
-            inicioTrabalho = new Date().getTime();
-            intervaloContagem = setInterval(atualizarTempoTrabalho, 1000);
-        }
+        let tempoTrabalho = 0;
+        let contadorTempo;
 
-        function pausarContagem() {
-            inicioPausa = new Date().getTime();
-            clearInterval(intervaloContagem);
-        }
-
-        function retomarContagem() {
-            if (inicioPausa) {
-                tempoPausa += new Date().getTime() - inicioPausa;
-                inicioPausa = null;
-                intervaloContagem = setInterval(atualizarTempoTrabalho, 1000);
-            }
+        function iniciarContadorTempo() {
+            contadorTempo = setInterval(atualizarTempoTrabalho, 1000);
         }
 
         function atualizarTempoTrabalho() {
-            var tempoAtual = new Date().getTime();
-            var tempoTotal = tempoAtual - inicioTrabalho - tempoPausa;
-            var segundos = Math.floor((tempoTotal / 1000) % 60);
-            var minutos = Math.floor((tempoTotal / (1000 * 60)) % 60);
-            var horas = Math.floor(tempoTotal / (1000 * 60 * 60));
-            var tempoFormatado = formatarNumero(horas) + ":" + formatarNumero(minutos) + ":" + formatarNumero(segundos);
-            var tempoTrabalhoElement = document.getElementById("tempo-trabalho");
-            tempoTrabalhoElement.textContent = tempoFormatado;
+            tempoTrabalho++;
+            document.getElementById('tempo-trabalho').textContent = 'Tempo de trabalho: ' + formatarTempo(tempoTrabalho);
         }
 
-        function formatarNumero(numero) {
-            return numero < 10 ? "0" + numero : numero;
+        function pausarContadorTempo() {
+            clearInterval(contadorTempo);
+        }
+
+        function retomarContadorTempo() {
+            iniciarContadorTempo();
         }
 
         function adicionarTarefa() {
-            var descricaoTarefaInput = document.getElementById("descricao-tarefa");
-            var descricaoTarefa = descricaoTarefaInput.value;
-            if (descricaoTarefa) {
-                var novaTarefa = {
-                    descricao: descricaoTarefa,
+            const descricao = document.getElementById('descricao-tarefa').value;
+            if (descricao.trim() !== '') {
+                const tarefa = {
+                    descricao: descricao,
                     concluida: false
                 };
-                tarefasRealizadas.push(novaTarefa);
-                exibirTarefas();
-                descricaoTarefaInput.value = "";
-                salvarDadosUsuario();
+                adicionarTarefaLista(tarefa);
+                document.getElementById('descricao-tarefa').value = '';
             }
         }
 
-        function exibirTarefas() {
-            var listaTarefasElement = document.getElementById("lista-tarefas");
-            listaTarefasElement.innerHTML = "";
+        function adicionarTarefaLista(tarefa) {
+            const listaTarefas = document.getElementById('lista-tarefas');
+            const tarefaElemento = document.createElement('div');
+            tarefaElemento.className = 'tarefa';
 
-            tarefasRealizadas.forEach(function (tarefa, index) {
-                var tarefaElement = document.createElement("div");
-                tarefaElement.classList.add("tarefa");
+            const descricaoElemento = document.createElement('span');
+            descricaoElemento.className = 'descricao';
+            descricaoElemento.textContent = tarefa.descricao;
 
-                var descricaoElement = document.createElement("span");
-                descricaoElement.classList.add("descricao");
-                descricaoElement.textContent = tarefa.descricao;
+            const concluidaElemento = document.createElement('button');
+            concluidaElemento.textContent = 'Concluída';
+            concluidaElemento.onclick = function() {
+                tarefa.concluida = true;
+                tarefaElemento.classList.add('concluida');
+                concluidaElemento.disabled = true;
+                canceladaElemento.disabled = true;
+            };
 
-                var concluirButton = document.createElement("button");
-                concluirButton.textContent = "Concluir";
-                concluirButton.onclick = function () {
-                    concluirTarefa(index);
-                };
+            const canceladaElemento = document.createElement('button');
+            canceladaElemento.textContent = 'Cancelar';
+            canceladaElemento.onclick = function() {
+                listaTarefas.removeChild(tarefaElemento);
+            };
 
-                var cancelarButton = document.createElement("button");
-                cancelarButton.textContent = "Cancelar";
-                cancelarButton.onclick = function () {
-                    cancelarTarefa(index);
-                };
-
-                tarefaElement.appendChild(descricaoElement);
-                tarefaElement.appendChild(concluirButton);
-                tarefaElement.appendChild(cancelarButton);
-
-                listaTarefasElement.appendChild(tarefaElement);
-            });
-        }
-
-        function concluirTarefa(index) {
-            tarefasRealizadas[index].concluida = true;
-            exibirTarefas();
-            salvarDadosUsuario();
-        }
-
-        function cancelarTarefa(index) {
-            tarefasRealizadas.splice(index, 1);
-            exibirTarefas();
-            salvarDadosUsuario();
+            tarefaElemento.appendChild(descricaoElemento);
+            tarefaElemento.appendChild(concluidaElemento);
+            tarefaElemento.appendChild(canceladaElemento);
+            listaTarefas.appendChild(tarefaElemento);
         }
 
         function enviarMensagem() {
-            var mensagemInput = document.getElementById("mensagem-input");
-            var mensagem = mensagemInput.value.trim();
-            if (mensagem) {
-                var novaMensagem = {
-                    remetente: usuarioAtual,
-                    texto: mensagem
-                };
-                mensagensEnviadas.push(novaMensagem);
-                exibirMensagens();
-                mensagemInput.value = "";
-                salvarDadosUsuario();
+            const mensagemInput = document.getElementById('mensagem-input');
+            const mensagem = mensagemInput.value;
+            if (mensagem.trim() !== '') {
+                const remetente = document.getElementById('nome-usuario').textContent;
+                adicionarMensagemEnviada(remetente, mensagem);
+                mensagemInput.value = '';
             }
         }
 
-        function exibirMensagens() {
-            var chatElement = document.getElementById("chat");
-            chatElement.innerHTML = "";
+        function adicionarMensagemEnviada(remetente, mensagem) {
+            const mensagens = document.getElementById('mensagens');
+            const mensagemElemento = document.createElement('div');
+            mensagemElemento.className = 'mensagem';
 
-            mensagensEnviadas.forEach(function (mensagem) {
-                var mensagemElement = document.createElement("div");
-                mensagemElement.classList.add("mensagem");
+            const remetenteElemento = document.createElement('span');
+            remetenteElemento.className = 'remetente';
+            remetenteElemento.textContent = remetente + ':';
 
-                var remetenteElement = document.createElement("span");
-                remetenteElement.classList.add("remetente");
-                remetenteElement.textContent = mensagem.remetente + ":";
+            const textoElemento = document.createElement('span');
+            textoElemento.className = 'texto';
+            textoElemento.textContent = mensagem;
 
-                var textoElement = document.createElement("span");
-                textoElement.classList.add("texto");
-                textoElement.textContent = mensagem.texto;
+            mensagemElemento.appendChild(remetenteElemento);
+            mensagemElemento.appendChild(textoElemento);
+            mensagens.appendChild(mensagemElemento);
+        }
 
-                mensagemElement.appendChild(remetenteElement);
-                mensagemElement.appendChild(textoElement);
-
-                chatElement.appendChild(mensagemElement);
-            });
+        function fecharDiaTrabalho() {
+            const confirmacao = confirm('Tem certeza de que deseja fechar o dia de trabalho? Todos os dados serão limpos.');
+            if (confirmacao) {
+                clearInterval(contadorTempo);
+                tempoTrabalho = 0;
+                document.getElementById('tempo-trabalho').textContent = 'Tempo de trabalho: 0h 0m 0s';
+                document.getElementById('lista-tarefas').innerHTML = '';
+                document.getElementById('mensagens').innerHTML = '';
+                document.getElementById('login-section').classList.remove('hidden');
+                document.getElementById('trabalho-section').classList.add('hidden');
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+            }
         }
     </script>
-
-    <h3>Login</h3>
-    <input type="text" id="usuario" placeholder="Usuário">
-    <input type="password" id="senha" placeholder="Senha">
-    <button onclick="login()">Entrar</button>
 </body>
 </html>
