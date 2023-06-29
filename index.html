@@ -2,20 +2,71 @@
 <html>
 <head>
     <title>Plataforma de Contador de Tempo</title>
-    <script>
-        function login() {
-            var username = document.getElementById("username").value;
-            var password = document.getElementById("password").value;
-
-            if (username === "joaobrites" && password === "12345") {
-                document.getElementById("loginSection").style.display = "none";
-                document.getElementById("counterSection").style.display = "block";
-                startCounter();
-            } else {
-                alert("Credenciais inválidas. Acesso negado.");
-            }
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 20px;
         }
 
+        #counterSection {
+            background-color: #fff;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        p {
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        button {
+            padding: 8px 12px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        ul {
+            padding: 0;
+            list-style-type: none;
+        }
+
+        li {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .task-item {
+            margin-right: 10px;
+        }
+
+        .completed {
+            text-decoration: line-through;
+        }
+
+        .time-spent {
+            margin-left: 10px;
+            font-style: italic;
+            color: #999;
+        }
+    </style>
+    <script>
         var startTime;
         var pauseTime = 0;
         var totalTime = 0;
@@ -35,6 +86,8 @@
                 document.getElementById("counter").innerHTML = "Tempo decorrido: " + hours + "h " + minutes + "m " + seconds + "s";
 
                 localStorage.setItem("totalTime", elapsed);
+
+                updateTaskTimes();
             }, 1000);
 
             document.getElementById("pauseButton").disabled = false;
@@ -55,36 +108,99 @@
                 document.getElementById("pauseButton").innerHTML = "Pausa";
             }
         }
-    </script>
-    <style>
-        #counterSection {
-            display: none;
+
+        function addTask() {
+            var taskInput = document.getElementById("taskInput");
+            var task = taskInput.value;
+
+            if (task.trim() !== "") {
+                var taskList = document.getElementById("taskList");
+                var newTask = document.createElement("li");
+                newTask.classList.add("task-item");
+
+                var taskText = document.createElement("span");
+                taskText.textContent = task;
+
+                var confirmButton = document.createElement("button");
+                confirmButton.textContent = "Confirmar";
+                confirmButton.onclick = function() {
+                    // Lógica para confirmar a realização da tarefa
+                    newTask.classList.add("completed");
+                    confirmButton.disabled = true;
+                    cancelButton.disabled = true;
+                };
+
+                var cancelButton = document.createElement("button");
+                cancelButton.textContent = "Cancelar";
+                cancelButton.onclick = function() {
+                    // Lógica para cancelar a tarefa
+                    newTask.remove();
+                };
+
+                var timeSpent = document.createElement("span");
+                timeSpent.classList.add("time-spent");
+
+                newTask.appendChild(taskText);
+                newTask.appendChild(confirmButton);
+                newTask.appendChild(cancelButton);
+                newTask.appendChild(timeSpent);
+
+                taskList.appendChild(newTask);
+
+                taskInput.value = "";
+            }
         }
-    </style>
+
+        function updateTaskTimes() {
+            var taskItems = document.getElementsByClassName("time-spent");
+
+            for (var i = 0; i < taskItems.length; i++) {
+                var taskItem = taskItems[i];
+                var startTime = taskItem.getAttribute("data-start-time");
+
+                if (startTime) {
+                    var currentTime = new Date().getTime();
+                    var elapsed = (currentTime - startTime) / 1000;
+
+                    var hours = Math.floor(elapsed / 3600);
+                    var minutes = Math.floor((elapsed % 3600) / 60);
+                    var seconds = Math.floor(elapsed % 60);
+
+                    taskItem.textContent = "Tempo decorrido: " + hours + "h " + minutes + "m " + seconds + "s";
+                }
+            }
+        }
+
+        window.onload = function() {
+            // Verifica se já existe um tempo contado anteriormente e inicia o contador
+            if (localStorage.getItem("totalTime")) {
+                document.getElementById("counterSection").style.display = "block";
+                startCounter();
+            }
+
+            var taskItems = document.getElementsByClassName("task-item");
+
+            for (var i = 0; i < taskItems.length; i++) {
+                var taskItem = taskItems[i];
+                var startTime = localStorage.getItem("taskStartTime_" + i);
+
+                if (startTime) {
+                    taskItem.setAttribute("data-start-time", startTime);
+                }
+            }
+        };
+    </script>
 </head>
 <body>
-    <div id="loginSection">
-        <h2>Login</h2>
-        <label for="username">Utilizador:</label>
-        <input type="text" id="username" required><br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" required><br>
-        <button onclick="login()">Entrar</button>
-    </div>
-
     <div id="counterSection">
         <h2>Contador de Tempo</h2>
         <p id="counter">Tempo decorrido: 0h 0m 0s</p>
         <button id="pauseButton" onclick="pauseCounter()" disabled>Pausa</button>
-    </div>
 
-    <script>
-        // Verifica se já existe um tempo contado anteriormente e inicia o contador
-        if (localStorage.getItem("totalTime")) {
-            document.getElementById("loginSection").style.display = "none";
-            document.getElementById("counterSection").style.display = "block";
-            startCounter();
-        }
-    </script>
+        <h2>Tarefas</h2>
+        <input type="text" id="taskInput" placeholder="Adicionar tarefa">
+        <button onclick="addTask()">Adicionar</button>
+        <ul id="taskList"></ul>
+    </div>
 </body>
 </html>
