@@ -1,252 +1,47 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Plataforma de Trabalho</title>
-    <style>
-        .hidden {
-            display: none;
-        }
+import time
 
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+# Função para validar as credenciais de login
+def login():
+    username = input("Utilizador: ")
+    password = input("Password: ")
 
-        .input-field {
-            margin-bottom: 10px;
-        }
+    if username == "joaobrites" and password == "12345":
+        return True
+    else:
+        return False
 
-        .input-field label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
+# Função para contar o tempo de trabalho
+def contador_tempo():
+    tempo_inicial = time.time()
+    tempo_pausa = 0
+    tempo_total = 0
 
-        .input-field input {
-            width: 100%;
-            padding: 5px;
-        }
+    while True:
+        # Calcula o tempo decorrido
+        tempo_atual = time.time()
+        tempo_decorrido = tempo_atual - tempo_inicial - tempo_pausa
 
-        .button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
+        print(f"Tempo decorrido: {tempo_decorrido:.2f} segundos")
 
-        .button:disabled {
-            background-color: lightgray;
-            cursor: not-allowed;
-        }
+        # Verifica se o usuário deseja colocar em pausa ou sair
+        opcao = input("Opções: [P]ausa/[S]air ")
 
-        .button-container {
-            text-align: right;
-            margin-top: 10px;
-        }
+        if opcao.lower() == "p":
+            if tempo_pausa == 0:
+                tempo_pausa = time.time() - tempo_atual
+                print("Pausa iniciada.")
+            else:
+                print("Pausa já está em andamento.")
+        elif opcao.lower() == "s":
+            tempo_total += tempo_decorrido
+            print(f"Tempo total trabalhado: {tempo_total:.2f} segundos")
+            break
 
-        .tempo-trabalho {
-            font-weight: bold;
-            margin-top: 20px;
-        }
+    print("Sessão encerrada.")
 
-        .tarefa {
-            margin-bottom: 10px;
-        }
-
-        .descricao {
-            display: inline-block;
-            margin-right: 10px;
-        }
-
-        .mensagem {
-            margin-bottom: 10px;
-        }
-
-        .remetente {
-            font-weight: bold;
-            margin-right: 5px;
-        }
-
-        .texto {
-            font-style: italic;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <section id="login-section">
-            <div class="input-field">
-                <label for="username">Utilizador:</label>
-                <input type="text" id="username">
-            </div>
-            <div class="input-field">
-                <label for="password">Password:</label>
-                <input type="password" id="password">
-            </div>
-            <div class="button-container">
-                <button class="button" onclick="login()">Iniciar Sessão</button>
-            </div>
-        </section>
-
-        <section id="trabalho-section" class="hidden">
-            <h2>Bem-vindo, <span id="nome-usuario"></span>!</h2>
-            <div class="tempo-trabalho" id="tempo-trabalho">Tempo de trabalho: 0h 0m 0s</div>
-
-            <h3>Adicionar Tarefa</h3>
-            <div class="input-field">
-                <input type="text" id="descricao-tarefa">
-            </div>
-            <div class="button-container">
-                <button class="button" onclick="adicionarTarefa()">Adicionar</button>
-            </div>
-
-            <h3>Tarefas Realizadas</h3>
-            <div id="lista-tarefas"></div>
-
-            <h3>Enviar Mensagem</h3>
-            <div class="input-field">
-                <input type="text" id="mensagem-input">
-            </div>
-            <div class="button-container">
-                <button class="button" onclick="enviarMensagem()">Enviar</button>
-            </div>
-
-            <h3>Mensagens Enviadas</h3>
-            <div id="mensagens"></div>
-
-            <div class="button-container">
-                <button class="button" onclick="fecharDiaTrabalho()">Fechar Dia de Trabalho</button>
-            </div>
-        </section>
-    </div>
-
-    <script>
-        function login() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            if (username === 'admin' && password === '1234') {
-                document.getElementById('login-section').classList.add('hidden');
-                document.getElementById('trabalho-section').classList.remove('hidden');
-                document.getElementById('nome-usuario').textContent = 'Admin';
-            } else if (username === 'david' && password === '1234') {
-                document.getElementById('login-section').classList.add('hidden');
-                document.getElementById('trabalho-section').classList.remove('hidden');
-                document.getElementById('nome-usuario').textContent = 'David';
-            } else if (username === 'joao' && password === '1234') {
-                document.getElementById('login-section').classList.add('hidden');
-                document.getElementById('trabalho-section').classList.remove('hidden');
-                document.getElementById('nome-usuario').textContent = 'João';
-            } else {
-                alert('Credenciais inválidas. Tente novamente.');
-            }
-        }
-
-        function formatarTempo(tempo) {
-            const horas = Math.floor(tempo / 3600);
-            const minutos = Math.floor((tempo % 3600) / 60);
-            const segundos = tempo % 60;
-            return `${horas}h ${minutos}m ${segundos}s`;
-        }
-
-        let tempoTrabalho = 0;
-        let intervaloTempo;
-
-        function iniciarContadorTempo() {
-            intervaloTempo = setInterval(() => {
-                tempoTrabalho++;
-                document.getElementById('tempo-trabalho').textContent = `Tempo de trabalho: ${formatarTempo(tempoTrabalho)}`;
-            }, 1000);
-        }
-
-        function pausarContadorTempo() {
-            clearInterval(intervaloTempo);
-        }
-
-        function retomarContadorTempo() {
-            iniciarContadorTempo();
-        }
-
-        function adicionarTarefa() {
-            const descricao = document.getElementById('descricao-tarefa').value;
-            if (descricao.trim() !== '') {
-                const tarefa = {
-                    descricao,
-                    concluida: false,
-                    cancelada: false
-                };
-                adicionarTarefaNaLista(tarefa);
-                document.getElementById('descricao-tarefa').value = '';
-            }
-        }
-
-        function adicionarTarefaNaLista(tarefa) {
-            const listaTarefas = document.getElementById('lista-tarefas');
-            const tarefaElemento = document.createElement('div');
-            tarefaElemento.className = 'tarefa';
-
-            const descricaoElemento = document.createElement('span');
-            descricaoElemento.className = 'descricao';
-            descricaoElemento.textContent = tarefa.descricao;
-
-            const concluirButton = document.createElement('button');
-            concluirButton.textContent = 'Concluir';
-            concluirButton.addEventListener('click', () => concluirTarefa(tarefaElemento));
-
-            const cancelarButton = document.createElement('button');
-            cancelarButton.textContent = 'Cancelar';
-            cancelarButton.addEventListener('click', () => cancelarTarefa(tarefaElemento));
-
-            tarefaElemento.appendChild(descricaoElemento);
-            tarefaElemento.appendChild(concluirButton);
-            tarefaElemento.appendChild(cancelarButton);
-            listaTarefas.appendChild(tarefaElemento);
-        }
-
-        function concluirTarefa(tarefaElemento) {
-            tarefaElemento.remove();
-        }
-
-        function cancelarTarefa(tarefaElemento) {
-            tarefaElemento.remove();
-        }
-
-        function enviarMensagem() {
-            const mensagemInput = document.getElementById('mensagem-input');
-            const mensagem = mensagemInput.value;
-            if (mensagem.trim() !== '') {
-                const remetente = document.getElementById('nome-usuario').textContent;
-                adicionarMensagemEnviada(remetente, mensagem);
-                mensagemInput.value = '';
-            }
-        }
-
-        function adicionarMensagemEnviada(remetente, mensagem) {
-            const mensagens = document.getElementById('mensagens');
-            const mensagemElemento = document.createElement('div');
-            mensagemElemento.className = 'mensagem';
-
-            const remetenteElemento = document.createElement('span');
-            remetenteElemento.className = 'remetente';
-            remetenteElemento.textContent = remetente + ':';
-
-            const textoElemento = document.createElement('span');
-            textoElemento.className = 'texto';
-            textoElemento.textContent = mensagem;
-
-            mensagemElemento.appendChild(remetenteElemento);
-            mensagemElemento.appendChild(textoElemento);
-            mensagens.appendChild(mensagemElemento);
-        }
-
-        function fecharDiaTrabalho() {
-            const confirmacao = confirm('Tem certeza de que deseja fechar o dia de trabalho? Todos os dados serão limpos.');
-            if (confirmacao) {
-                location.reload();
-            }
-        }
-    </script>
-</body>
-</html>
+# Inicia o login
+if login():
+    print("Credenciais válidas. Bem-vindo!")
+    contador_tempo()
+else:
+    print("Credenciais inválidas. Acesso negado.")
