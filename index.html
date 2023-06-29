@@ -1,47 +1,75 @@
-import time
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Plataforma de Contador de Tempo</title>
+    <script>
+        function login() {
+            var username = document.getElementById("username").value;
+            var password = document.getElementById("password").value;
 
-# Função para validar as credenciais de login
-def login():
-    username = input("Utilizador: ")
-    password = input("Password: ")
+            if (username === "joaobrites" && password === "12345") {
+                document.getElementById("loginSection").style.display = "none";
+                document.getElementById("counterSection").style.display = "block";
+                startCounter();
+            } else {
+                alert("Credenciais inválidas. Acesso negado.");
+            }
+        }
 
-    if username == "joaobrites" and password == "12345":
-        return True
-    else:
-        return False
+        var startTime;
+        var pauseTime = 0;
+        var totalTime = 0;
+        var counterInterval;
 
-# Função para contar o tempo de trabalho
-def contador_tempo():
-    tempo_inicial = time.time()
-    tempo_pausa = 0
-    tempo_total = 0
+        function startCounter() {
+            startTime = new Date().getTime();
 
-    while True:
-        # Calcula o tempo decorrido
-        tempo_atual = time.time()
-        tempo_decorrido = tempo_atual - tempo_inicial - tempo_pausa
+            counterInterval = setInterval(function() {
+                var currentTime = new Date().getTime();
+                var elapsed = (currentTime - startTime - pauseTime) / 1000;
+                document.getElementById("counter").innerHTML = "Tempo decorrido: " + elapsed.toFixed(2) + " segundos";
+            }, 100);
 
-        print(f"Tempo decorrido: {tempo_decorrido:.2f} segundos")
+            document.getElementById("pauseButton").disabled = false;
+        }
 
-        # Verifica se o usuário deseja colocar em pausa ou sair
-        opcao = input("Opções: [P]ausa/[S]air ")
+        function pauseCounter() {
+            if (counterInterval) {
+                clearInterval(counterInterval);
+                counterInterval = null;
 
-        if opcao.lower() == "p":
-            if tempo_pausa == 0:
-                tempo_pausa = time.time() - tempo_atual
-                print("Pausa iniciada.")
-            else:
-                print("Pausa já está em andamento.")
-        elif opcao.lower() == "s":
-            tempo_total += tempo_decorrido
-            print(f"Tempo total trabalhado: {tempo_total:.2f} segundos")
-            break
+                pauseTime += new Date().getTime() - startTime;
+                startTime = null;
 
-    print("Sessão encerrada.")
+                document.getElementById("pauseButton").innerHTML = "Retomar";
+            } else {
+                startCounter();
 
-# Inicia o login
-if login():
-    print("Credenciais válidas. Bem-vindo!")
-    contador_tempo()
-else:
-    print("Credenciais inválidas. Acesso negado.")
+                document.getElementById("pauseButton").innerHTML = "Pausa";
+            }
+        }
+    </script>
+    <style>
+        #counterSection {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginSection">
+        <h2>Login</h2>
+        <label for="username">Utilizador:</label>
+        <input type="text" id="username" required><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" required><br>
+        <button onclick="login()">Entrar</button>
+    </div>
+
+    <div id="counterSection">
+        <h2>Contador de Tempo</h2>
+        <p id="counter">Tempo decorrido: 0.00 segundos</p>
+        <button id="pauseButton" onclick="pauseCounter()" disabled>Pausa</button>
+    </div>
+</body>
+</html>
+iais inválidas. Acesso negado.")
