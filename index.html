@@ -22,13 +22,20 @@
         var counterInterval;
 
         function startCounter() {
-            startTime = new Date().getTime();
+            startTime = new Date().getTime() - (localStorage.getItem("pauseTime") || 0);
 
             counterInterval = setInterval(function() {
                 var currentTime = new Date().getTime();
-                var elapsed = (currentTime - startTime - pauseTime) / 1000;
-                document.getElementById("counter").innerHTML = "Tempo decorrido: " + elapsed.toFixed(2) + " segundos";
-            }, 100);
+                var elapsed = (currentTime - startTime) / 1000;
+
+                var hours = Math.floor(elapsed / 3600);
+                var minutes = Math.floor((elapsed % 3600) / 60);
+                var seconds = Math.floor(elapsed % 60);
+
+                document.getElementById("counter").innerHTML = "Tempo decorrido: " + hours + "h " + minutes + "m " + seconds + "s";
+
+                localStorage.setItem("totalTime", elapsed);
+            }, 1000);
 
             document.getElementById("pauseButton").disabled = false;
         }
@@ -38,8 +45,8 @@
                 clearInterval(counterInterval);
                 counterInterval = null;
 
-                pauseTime += new Date().getTime() - startTime;
-                startTime = null;
+                pauseTime = new Date().getTime() - startTime;
+                localStorage.setItem("pauseTime", pauseTime);
 
                 document.getElementById("pauseButton").innerHTML = "Retomar";
             } else {
@@ -67,9 +74,17 @@
 
     <div id="counterSection">
         <h2>Contador de Tempo</h2>
-        <p id="counter">Tempo decorrido: 0.00 segundos</p>
+        <p id="counter">Tempo decorrido: 0h 0m 0s</p>
         <button id="pauseButton" onclick="pauseCounter()" disabled>Pausa</button>
     </div>
+
+    <script>
+        // Verifica se já existe um tempo contado anteriormente e inicia o contador
+        if (localStorage.getItem("totalTime")) {
+            document.getElementById("loginSection").style.display = "none";
+            document.getElementById("counterSection").style.display = "block";
+            startCounter();
+        }
+    </script>
 </body>
 </html>
-iais inválidas. Acesso negado.")
